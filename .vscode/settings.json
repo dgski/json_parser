@@ -60,6 +60,7 @@
         "iomanip": "cpp",
         "list": "cpp",
         "map": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "__memory": "cpp"
     }
 }

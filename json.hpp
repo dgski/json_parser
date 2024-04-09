@@ -74,14 +74,14 @@ ParseResult parseString(std::string_view textData)
 
 ParseResult parseNumber(std::string_view textData)
 {
-  const auto end = textData.find_first_not_of("0123456789.-");
+  auto end = textData.find_first_not_of("0123456789.-");
+  if (end == std::string_view::npos) {
+    end = textData.size();
+  }
   const auto value = textData.substr(0, end);
   textData.remove_prefix(end);
-  if (value.find('.') != std::string_view::npos) {
-    return { utils::stof(value), textData };
-  } else {
-    return { utils::stoi(value), textData };
-  }
+  const bool isFloat = value.find('.') != std::string_view::npos;
+  return { isFloat ? Value(utils::stof(value)) : Value(utils::stoi(value)), textData };
 }
 
 ParseResult parseTrue(std::string_view textData)
