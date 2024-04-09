@@ -5,6 +5,8 @@
 #include <string_view>
 #include <vector>
 #include <variant>
+#include <unordered_map>
+#include <charconv>
 
 #include "utils.hpp"
 
@@ -18,9 +20,7 @@ using String = std::string_view;
 using Bool = bool;
 using Null = std::monostate;
 using Value = std::variant<Int, Float, String, Bool, Null, Array, Object>;
-struct Object {
-  std::vector<std::pair<String, Value>> values;
-};
+struct Object : std::unordered_map<String, Value> {};
 struct Array : std::vector<Value> {};
 
 struct ParseResult { Value value; std::string_view rest; };
@@ -40,7 +40,7 @@ ParseResult parseObject(std::string_view textData)
       textData.remove_prefix(1);
       return { object, textData };
     }
-    if (!object.values.empty()) {
+    if (!object.empty()) {
       if (textData.front() != ',') {
         return { Null{}, textData };
       }
@@ -68,7 +68,7 @@ ParseResult parseObject(std::string_view textData)
     if (std::holds_alternative<Null>(value)) {
       return { Null{}, textData };
     }
-    object.values.push_back({ keyStr, value });
+    object.insert({ keyStr, value });
     textData = newRest;
   }
 }
@@ -122,9 +122,23 @@ ParseResult parseNumber(std::string_view textData)
   auto value = textData.substr(0, end);
   textData.remove_prefix(end);
   if (value.find('.') != std::string_view::npos) {
-    return { std::stof(std::string(value)), textData };
+    float f;
+    if (
+      std::from_chars(value.data(), value.data() + value.size(), f).ptr !=
+      value.data() + value.size())
+    {
+      return { Null{}, textData };
+    }
+    return { f, textData };
   } else {
-    return { std::stoi(std::string(value)), textData };
+    int i;
+    if (
+      std::from_chars(value.data(), value.data() + value.size(), i).ptr !=
+      value.data() + value.size())
+    {
+      return { Null{}, textData };
+    }
+    return { i, textData };
   }
 }
 
