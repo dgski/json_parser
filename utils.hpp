@@ -39,4 +39,16 @@ public:
   }
 };
 
+int stoi(std::string_view str) {
+  int result;
+  std::from_chars(str.data(), str.data() + str.size(), result);
+  return result;
+}
+
+float stof(std::string_view str) {
+  float result;
+  std::from_chars(str.data(), str.data() + str.size(), result);
+  return result;
+}
+
 } // namespace utils

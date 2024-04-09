@@ -38,42 +38,14 @@ ParseResult parseObject(std::string_view textData, std::pmr::memory_resource& me
   Object object(&memoryResource);
   while (true) {
     textData = utils::consumeWhitespace(textData);
-    if (textData.empty()) {
-      return { Null{}, textData };
-    }
     if (textData.front() == '}') {
       textData.remove_prefix(1);
       return { object, textData };
     }
-    if (!object.empty()) {
-      if (textData.front() != ',') {
-        return { Null{}, textData };
-      }
-      textData.remove_prefix(1);
-    }
-    textData = utils::consumeWhitespace(textData);
-    if (textData.empty()) {
-      return { Null{}, textData };
-    }
-    if (textData.front() != '"') {
-      return { Null{}, textData };
-    }
-    auto [key, rest] = parseImpl(textData, memoryResource);
-    auto keyStr = std::get<String>(key);
-    if (keyStr.empty()) {
-      return { Null{}, textData };
-    }
-    textData = rest;
-    textData = utils::consumeWhitespace(textData);
-    if (textData.empty() || textData.front() != ':') {
-      return { Null{}, textData };
-    }
-    textData.remove_prefix(1);
-    auto [value, newRest] = parseImpl(textData, memoryResource);
-    if (std::holds_alternative<Null>(value)) {
-      return { Null{}, textData };
-    }
-    object.insert({ keyStr, value });
+    textData.remove_prefix(object.empty() ? 0 : 1);
+    auto [key, rest] = parseImpl(utils::consumeWhitespace(textData), memoryResource);
+    auto [value, newRest] = parseImpl(utils::consumeWhitespace(rest).substr(1), memoryResource);
+    object.insert({ std::get<String>(key), value });
     textData = newRest;
   }
 }
@@ -84,23 +56,14 @@ ParseResult parseArray(std::string_view textData, std::pmr::memory_resource& mem
   Array array(&memoryResource);
   while (true) {
     textData = utils::consumeWhitespace(textData);
-    if (textData.empty()) {
-      return { Null{}, textData };
-    }
     if (textData.front() == ']') {
       textData.remove_prefix(1);
       return { array, textData };
     }
     if (!array.empty()) {
-      if (textData.front() != ',') {
-        return { Null{}, textData };
-      }
       textData.remove_prefix(1);
     }
     auto [value, newRest] = parseImpl(textData, memoryResource);
-    if (std::holds_alternative<Null>(value)) {
-      return { Null{}, textData };
-    }
     array.push_back(value);
     textData = newRest;
   }
@@ -109,42 +72,37 @@ ParseResult parseArray(std::string_view textData, std::pmr::memory_resource& mem
 ParseResult parseString(std::string_view textData)
 {
   textData.remove_prefix(1);
-  auto end = textData.find('"');
-  if (end == std::string_view::npos) {
-    return { Null{}, textData };
-  }
-  auto value = textData.substr(0, end);
+  const auto end = textData.find('"');
+  const auto value = textData.substr(0, end);
   textData.remove_prefix(end + 1);
   return { value, textData };
 }
 
 ParseResult parseNumber(std::string_view textData)
 {
-  auto end = textData.find_first_not_of("0123456789.-");
-  if (end == 0) {
-    return { Null{}, textData };
-  }
-  auto value = textData.substr(0, end);
+  const auto end = textData.find_first_not_of("0123456789.-");
+  const auto value = textData.substr(0, end);
   textData.remove_prefix(end);
   if (value.find('.') != std::string_view::npos) {
-    float f;
-    if (
-      std::from_chars(value.data(), value.data() + value.size(), f).ptr !=
-      value.data() + value.size())
-    {
-      return { Null{}, textData };
-    }
-    return { f, textData };
+    return { utils::stof(value), textData };
   } else {
-    int i;
-    if (
-      std::from_chars(value.data(), value.data() + value.size(), i).ptr !=
-      value.data() + value.size())
-    {
-      return { Null{}, textData };
-    }
-    return { i, textData };
+    return { utils::stoi(value), textData };
   }
+}
+
+ParseResult parseTrue(std::string_view textData)
+{
+  return { true, textData.substr(4) };
+}
+
+ParseResult parseFalse(std::string_view textData)
+{
+  return { false, textData.substr(5) };
+}
+
+ParseResult parseNull(std::string_view textData)
+{
+  return { Null{}, textData.substr(4) };
 }
 
 ParseResult parseImpl(std::string_view textData, std::pmr::memory_resource& memoryResource)
@@ -158,9 +116,9 @@ ParseResult parseImpl(std::string_view textData, std::pmr::memory_resource& memo
     case '{': return parseObject(textData, memoryResource);
     case '[': return parseArray(textData, memoryResource);
     case '"': return parseString(textData);
-    case 't': textData.remove_prefix(4); return { true, textData };
-    case 'f': textData.remove_prefix(5); return { false, textData };
-    case 'n': textData.remove_prefix(4); return { Null{}, textData };
+    case 't': return parseTrue(textData);
+    case 'f': return parseFalse(textData);
+    case 'n': return parseNull(textData);
     default: return parseNumber(textData);
   }
 }
