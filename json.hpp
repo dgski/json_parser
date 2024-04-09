@@ -133,10 +133,11 @@ std::ostream& operator<<(std::ostream& os, const Value& value);
 std::ostream& operator<<(std::ostream& os, const Object& object)
 {
   os << "{";
-  for (const auto& [key, value] : object) {
-    os << "\"" << key << "\": ";
-    std::visit([&os](const auto& value) { os << value; }, value);
-    os << ", ";
+  for (auto it = object.begin(); it != object.end(); ++it) {
+    os << "\"" << it->first << "\": " << it->second;
+    if (std::next(it) != object.end()) {
+      os << ", ";
+    }
   }
   os << "}";
   return os;
@@ -145,9 +146,11 @@ std::ostream& operator<<(std::ostream& os, const Object& object)
 std::ostream& operator<<(std::ostream& os, const Array& array)
 {
   os << "[";
-  for (const auto& value : array) {
-    std::visit([&os](const auto& value) { os << value; }, value);
-    os << ", ";
+  for (auto it = array.begin(); it != array.end(); ++it) {
+    os << *it;
+    if (std::next(it) != array.end()) {
+      os << ", ";
+    }
   }
   os << "]";
   return os;

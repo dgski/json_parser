@@ -79,5 +79,8 @@ int main() {
 
   std::cout << "All tests passed!" << std::endl;
 
+  std::string_view sample = R"({"name": "John", "age": 30, "favoriteNumbers": [1, 2, 3]})";
+  auto parsed = json::parse(sample);
+
   return 0;
 }
