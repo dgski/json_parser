@@ -127,16 +127,15 @@ Value parse(std::string_view textData, std::pmr::memory_resource& memoryResource
 
 std::ostream& operator<<(std::ostream& os, const Object& object);
 std::ostream& operator<<(std::ostream& os, const Array& array);
-std::ostream& operator<<(std::ostream& os, const Null&);
 std::ostream& operator<<(std::ostream& os, const Value& value);
 
 std::ostream& operator<<(std::ostream& os, const Object& object)
 {
   os << "{";
   for (auto it = object.begin(); it != object.end(); ++it) {
-    os << "\"" << it->first << "\": " << it->second;
+    os << "\"" << it->first << "\":" << it->second;
     if (std::next(it) != object.end()) {
-      os << ", ";
+      os << ",";
     }
   }
   os << "}";
@@ -149,22 +148,30 @@ std::ostream& operator<<(std::ostream& os, const Array& array)
   for (auto it = array.begin(); it != array.end(); ++it) {
     os << *it;
     if (std::next(it) != array.end()) {
-      os << ", ";
+      os << ",";
     }
   }
   os << "]";
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const Null&)
-{
-  os << "null";
-  return os;
-}
-
 std::ostream& operator<<(std::ostream& os, const Value& value)
 {
-  std::visit([&os](const auto& value) { os << value; }, value);
+  if (std::holds_alternative<Int>(value)) {
+    os << std::get<Int>(value);
+  } else if (std::holds_alternative<Float>(value)) {
+    os << std::get<Float>(value);
+  } else if (std::holds_alternative<String>(value)) {
+    os << "\"" << std::get<String>(value) << "\"";
+  } else if (std::holds_alternative<Bool>(value)) {
+    os << (std::get<Bool>(value) ? "true" : "false");
+  } else if (std::holds_alternative<Null>(value)) {
+    os << "null";
+  } else if (std::holds_alternative<Array>(value)) {
+    os << std::get<Array>(value);
+  } else if (std::holds_alternative<Object>(value)) {
+    os << std::get<Object>(value);
+  }
   return os;
 }
 

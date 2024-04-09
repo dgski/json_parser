@@ -1,8 +1,8 @@
-# JSON Parser
+# JSON Parser And Serializer
 
-- Concise, optimistic JSON parser written in C++.
+- Concise, optimistic JSON parser/serializer written in C++.
 - Uses recursive parsing and std::variant (Prioritizing locality over space).
-- No string allocations; uses references to original buffer.
+- No string allocations; uses references to original buffers.
 - Uses std::pmr::memory_resource for allocations: allowing for custom pre-allocation.
 
 Sample usage:

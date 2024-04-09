@@ -3,6 +3,9 @@
 #include <string_view>
 #include <memory_resource>
 #include <optional>
+#include <charconv>
+#include <cctype>
+#include <sstream>
 
 namespace utils {
 
@@ -49,6 +52,13 @@ float stof(std::string_view str) {
   float result;
   std::from_chars(str.data(), str.data() + str.size(), result);
   return result;
+}
+
+template<typename T>
+std::string toString(const T& value) {
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
 }
 
 } // namespace utils

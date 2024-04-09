@@ -77,10 +77,42 @@ int main() {
     assert(std::get<json::String>(std::get<json::Object>(children3.at(0)).at("name")) == "Ann");
   }
 
-  std::cout << "All tests passed!" << std::endl;
+  std::cout << "All tests parsing passed!" << std::endl;
 
-  std::string_view sample = R"({"name": "John", "age": 30, "favoriteNumbers": [1, 2, 3]})";
-  auto parsed = json::parse(sample);
+  json::Value value = 42;
+  assert(utils::toString(value) == "42");
+  value = 3.14f;
+  assert(utils::toString(value) == "3.14");
+  value = "hello";
+  assert(utils::toString(value) == "\"hello\"");
+  value = true;
+  assert(utils::toString(value) == "true");
+  value = false;
+  assert(utils::toString(value) == "false");
+  value = json::Null{};
+  assert(utils::toString(value) == "null");
+  value = json::Array{1, 2, 3};
+  assert(utils::toString(value) == "[1,2,3]");
+  value = json::Object{{"key1", 1}, {"key2", 2}};
+  assert(
+    (utils::toString(value) == "{\"key1\":1,\"key2\":2}") ||
+    (utils::toString(value) == "{\"key2\":2,\"key1\":1}"));
+
+  std::cout << "All serialization tests passed!" << std::endl;
+
+  const std::string_view finalBusinessJson = R"(
+    {
+      "items": [
+        [1, "item1", 10],
+        [2, "item2", 20]
+      ]
+    }
+  )";
+  auto businessJson = json::parse(finalBusinessJson);
+  const std::string_view EXPECTED_STRING = "{\"items\":[[1,\"item1\",10],[2,\"item2\",20]]}";
+  assert(utils::toString(businessJson) == EXPECTED_STRING);
+
+  std::cout << "All tests passed!" << std::endl;
 
   return 0;
 }
