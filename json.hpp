@@ -39,8 +39,7 @@ ParseResult parseObject(std::string_view textData, std::pmr::memory_resource& me
   while (true) {
     textData = utils::consumeWhitespace(textData);
     if (textData.front() == '}') {
-      textData.remove_prefix(1);
-      return { object, textData };
+      return { object, textData.substr(1) };
     }
     textData.remove_prefix(object.empty() ? 0 : 1);
     auto [key, rest] = parseImpl(utils::consumeWhitespace(textData), memoryResource);
@@ -57,12 +56,9 @@ ParseResult parseArray(std::string_view textData, std::pmr::memory_resource& mem
   while (true) {
     textData = utils::consumeWhitespace(textData);
     if (textData.front() == ']') {
-      textData.remove_prefix(1);
-      return { array, textData };
+      return { array, textData.substr(1) };
     }
-    if (!array.empty()) {
-      textData.remove_prefix(1);
-    }
+    textData.remove_prefix(array.empty() ? 0 : 1);
     auto [value, newRest] = parseImpl(textData, memoryResource);
     array.push_back(value);
     textData = newRest;
@@ -73,9 +69,7 @@ ParseResult parseString(std::string_view textData)
 {
   textData.remove_prefix(1);
   const auto end = textData.find('"');
-  const auto value = textData.substr(0, end);
-  textData.remove_prefix(end + 1);
-  return { value, textData };
+  return { textData.substr(0, end), textData.substr(end + 1) };
 }
 
 ParseResult parseNumber(std::string_view textData)
