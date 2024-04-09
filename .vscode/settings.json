@@ -59,6 +59,7 @@
         "csignal": "cpp",
         "iomanip": "cpp",
         "list": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "memory_resource": "cpp"
     }
 }

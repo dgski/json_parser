@@ -7,6 +7,7 @@
 #include <variant>
 #include <unordered_map>
 #include <charconv>
+#include <memory_resource>
 
 #include "utils.hpp"
 
@@ -20,17 +21,21 @@ using String = std::string_view;
 using Bool = bool;
 using Null = std::monostate;
 using Value = std::variant<Int, Float, String, Bool, Null, Array, Object>;
-struct Object : std::unordered_map<String, Value> {};
-struct Array : std::vector<Value> {};
+struct Object : std::pmr::unordered_map<String, Value> {
+  using std::pmr::unordered_map<String, Value>::unordered_map;
+};
+struct Array : std::pmr::vector<Value> {
+  using std::pmr::vector<Value>::vector;
+};
 
 struct ParseResult { Value value; std::string_view rest; };
 
-ParseResult parseImpl(std::string_view textData);
+ParseResult parseImpl(std::string_view textData, std::pmr::memory_resource& memoryResource);
 
-ParseResult parseObject(std::string_view textData)
+ParseResult parseObject(std::string_view textData, std::pmr::memory_resource& memoryResource)
 {
   textData.remove_prefix(1);
-  Object object;
+  Object object(&memoryResource);
   while (true) {
     textData = utils::consumeWhitespace(textData);
     if (textData.empty()) {
@@ -53,7 +58,7 @@ ParseResult parseObject(std::string_view textData)
     if (textData.front() != '"') {
       return { Null{}, textData };
     }
-    auto [key, rest] = parseImpl(textData);
+    auto [key, rest] = parseImpl(textData, memoryResource);
     auto keyStr = std::get<String>(key);
     if (keyStr.empty()) {
       return { Null{}, textData };
@@ -64,7 +69,7 @@ ParseResult parseObject(std::string_view textData)
       return { Null{}, textData };
     }
     textData.remove_prefix(1);
-    auto [value, newRest] = parseImpl(textData);
+    auto [value, newRest] = parseImpl(textData, memoryResource);
     if (std::holds_alternative<Null>(value)) {
       return { Null{}, textData };
     }
@@ -73,10 +78,10 @@ ParseResult parseObject(std::string_view textData)
   }
 }
 
-ParseResult parseArray(std::string_view textData)
+ParseResult parseArray(std::string_view textData, std::pmr::memory_resource& memoryResource)
 {
   textData.remove_prefix(1);
-  Array array;
+  Array array(&memoryResource);
   while (true) {
     textData = utils::consumeWhitespace(textData);
     if (textData.empty()) {
@@ -92,7 +97,7 @@ ParseResult parseArray(std::string_view textData)
       }
       textData.remove_prefix(1);
     }
-    auto [value, newRest] = parseImpl(textData);
+    auto [value, newRest] = parseImpl(textData, memoryResource);
     if (std::holds_alternative<Null>(value)) {
       return { Null{}, textData };
     }
@@ -142,7 +147,7 @@ ParseResult parseNumber(std::string_view textData)
   }
 }
 
-ParseResult parseImpl(std::string_view textData)
+ParseResult parseImpl(std::string_view textData, std::pmr::memory_resource& memoryResource)
 {
   textData = utils::consumeWhitespace(textData);
   if (textData.empty()) {
@@ -150,8 +155,8 @@ ParseResult parseImpl(std::string_view textData)
   }
 
   switch (textData.front()) {
-    case '{': return parseObject(textData);
-    case '[': return parseArray(textData);
+    case '{': return parseObject(textData, memoryResource);
+    case '[': return parseArray(textData, memoryResource);
     case '"': return parseString(textData);
     case 't': textData.remove_prefix(4); return { true, textData };
     case 'f': textData.remove_prefix(5); return { false, textData };
@@ -161,7 +166,11 @@ ParseResult parseImpl(std::string_view textData)
 }
 
 Value parse(std::string_view textData) {
-  return parseImpl(textData).value;
+  return parseImpl(textData, *std::pmr::get_default_resource()).value;
+}
+
+Value parse(std::string_view textData, std::pmr::memory_resource& memoryResource) {
+  return parseImpl(textData, memoryResource).value;
 }
 
 } // namespace json

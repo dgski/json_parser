@@ -50,6 +50,33 @@ int main() {
   assert(std::get<json::String>(std::get<json::Object>(children.at(1)).at("name")) == "Billy");
   assert(std::get<json::Int>(std::get<json::Object>(children.at(1)).at("age")) == 7);
 
+  utils::reusable_buffer pool(1000000);
+  {
+    auto sampleJson2 = json::parse(getSampleJson(), pool);
+    auto& obj2 = std::get<json::Object>(sampleJson2);
+    assert(std::get<json::String>(obj2.at("name")) == "John");
+    assert(std::get<json::Int>(obj2.at("age")) == 30);
+    auto& cars2 = std::get<json::Object>(obj2.at("cars"));
+    assert(std::get<json::String>(cars2.at("car1")) == "Ford");
+    assert(std::get<json::String>(cars2.at("car2")) == "BMW");
+    assert(std::get<json::String>(cars2.at("car3")) == "Fiat");
+    auto& children2 = std::get<json::Array>(obj2.at("children"));
+    assert(std::get<json::String>(std::get<json::Object>(children2.at(0)).at("name")) == "Ann");
+  }
+  pool.clear();
+  {
+    auto sampleJson3 = json::parse(getSampleJson(), pool);
+    auto& obj3 = std::get<json::Object>(sampleJson3);
+    assert(std::get<json::String>(obj3.at("name")) == "John");
+    assert(std::get<json::Int>(obj3.at("age")) == 30);
+    auto& cars3 = std::get<json::Object>(obj3.at("cars"));
+    assert(std::get<json::String>(cars3.at("car1")) == "Ford");
+    assert(std::get<json::String>(cars3.at("car2")) == "BMW");
+    assert(std::get<json::String>(cars3.at("car3")) == "Fiat");
+    auto& children3 = std::get<json::Array>(obj3.at("children"));
+    assert(std::get<json::String>(std::get<json::Object>(children3.at(0)).at("name")) == "Ann");
+  }
+
   std::cout << "All tests passed!" << std::endl;
 
   return 0;
