@@ -125,4 +125,44 @@ Value parse(std::string_view textData, std::pmr::memory_resource& memoryResource
   return parseImpl(textData, memoryResource).value;
 }
 
+std::ostream& operator<<(std::ostream& os, const Object& object);
+std::ostream& operator<<(std::ostream& os, const Array& array);
+std::ostream& operator<<(std::ostream& os, const Null&);
+std::ostream& operator<<(std::ostream& os, const Value& value);
+
+std::ostream& operator<<(std::ostream& os, const Object& object)
+{
+  os << "{";
+  for (const auto& [key, value] : object) {
+    os << "\"" << key << "\": ";
+    std::visit([&os](const auto& value) { os << value; }, value);
+    os << ", ";
+  }
+  os << "}";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Array& array)
+{
+  os << "[";
+  for (const auto& value : array) {
+    std::visit([&os](const auto& value) { os << value; }, value);
+    os << ", ";
+  }
+  os << "]";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Null&)
+{
+  os << "null";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Value& value)
+{
+  std::visit([&os](const auto& value) { os << value; }, value);
+  return os;
+}
+
 } // namespace json
