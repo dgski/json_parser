@@ -152,21 +152,17 @@ std::ostream& operator<<(std::ostream& os, const Array& array)
 
 std::ostream& operator<<(std::ostream& os, const Value& value)
 {
-  if (std::holds_alternative<Int>(value)) {
-    os << std::get<Int>(value);
-  } else if (std::holds_alternative<Float>(value)) {
-    os << std::get<Float>(value);
-  } else if (std::holds_alternative<String>(value)) {
-    os << "\"" << std::get<String>(value) << "\"";
-  } else if (std::holds_alternative<Bool>(value)) {
-    os << (std::get<Bool>(value) ? "true" : "false");
-  } else if (std::holds_alternative<Null>(value)) {
-    os << "null";
-  } else if (std::holds_alternative<Array>(value)) {
-    os << std::get<Array>(value);
-  } else if (std::holds_alternative<Object>(value)) {
-    os << std::get<Object>(value);
-  }
+  struct Visitor {
+    std::ostream& os;
+    void operator()(const Int& value) const { os << value; }
+    void operator()(const Float& value) const { os << value; }
+    void operator()(const String& value) const { os << "\"" << value << "\""; }
+    void operator()(const Bool& value) const { os << (value ? "true" : "false"); }
+    void operator()(const Null& value) const { os << "null"; }
+    void operator()(const Array& value) const { os << value; }
+    void operator()(const Object& value) const { os << value; }
+  };
+  std::visit(Visitor{ os }, value);
   return os;
 }
 
