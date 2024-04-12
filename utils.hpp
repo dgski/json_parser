@@ -6,14 +6,14 @@
 #include <charconv>
 #include <cctype>
 #include <sstream>
+#include <algorithm>
 
 namespace utils {
 
 std::string_view consumeWhitespace(std::string_view textData) {
-  while (!textData.empty() && std::isspace(textData.front())) {
-    textData.remove_prefix(1);
-  }
-  return textData;
+  const auto begin = std::find_if_not(
+    textData.begin(), textData.end(), [](char c) { return std::isspace(c); });
+  return std::string_view(begin, textData.end());
 }
 
 class reusable_buffer : public std::pmr::memory_resource
@@ -59,6 +59,19 @@ std::string toString(const T& value) {
   std::stringstream ss;
   ss << value;
   return ss.str();
+}
+
+template<typename F>
+auto benchmark(F&& f, size_t iterations)
+{
+  const auto t1 = std::chrono::high_resolution_clock::now();
+  auto result = f();
+  const auto iterationsLeft = iterations - 1;
+  for (size_t i = 0; i < iterationsLeft; ++i) {
+    f();
+  }
+  auto t2 = std::chrono::high_resolution_clock::now();
+  return std::make_pair(result, std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count());
 }
 
 } // namespace utils
