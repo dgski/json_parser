@@ -27,6 +27,17 @@ auto getSampleJson() {
   )";
 }
 
+auto getHugeJsonArray() {
+  std::string result = "[";
+  for (int i = 0; i < 10000; i++) {
+    result += getSampleJson();
+    result += ",";
+  }
+  result.pop_back();
+  result += "]";
+  return result;
+}
+
 int main() {
   assert(std::holds_alternative<json::Null>(json::parse("null")));
   assert(std::holds_alternative<json::String>(json::parse("\"hello\"")));
@@ -49,34 +60,6 @@ int main() {
   assert(std::get<json::Int>(std::get<json::Object>(children.at(0)).at("age")) == 5);
   assert(std::get<json::String>(std::get<json::Object>(children.at(1)).at("name")) == "Billy");
   assert(std::get<json::Int>(std::get<json::Object>(children.at(1)).at("age")) == 7);
-
-  utils::reusable_buffer pool(1000000);
-  {
-    auto sampleJson2 = json::parse(getSampleJson(), pool);
-    auto& obj2 = std::get<json::Object>(sampleJson2);
-    assert(std::get<json::String>(obj2.at("name")) == "John");
-    assert(std::get<json::Int>(obj2.at("age")) == 30);
-    auto& cars2 = std::get<json::Object>(obj2.at("cars"));
-    assert(std::get<json::String>(cars2.at("car1")) == "Ford");
-    assert(std::get<json::String>(cars2.at("car2")) == "BMW");
-    assert(std::get<json::String>(cars2.at("car3")) == "Fiat");
-    auto& children2 = std::get<json::Array>(obj2.at("children"));
-    assert(std::get<json::String>(std::get<json::Object>(children2.at(0)).at("name")) == "Ann");
-  }
-  pool.clear();
-  {
-    auto sampleJson3 = json::parse(getSampleJson(), pool);
-    auto& obj3 = std::get<json::Object>(sampleJson3);
-    assert(std::get<json::String>(obj3.at("name")) == "John");
-    assert(std::get<json::Int>(obj3.at("age")) == 30);
-    auto& cars3 = std::get<json::Object>(obj3.at("cars"));
-    assert(std::get<json::String>(cars3.at("car1")) == "Ford");
-    assert(std::get<json::String>(cars3.at("car2")) == "BMW");
-    assert(std::get<json::String>(cars3.at("car3")) == "Fiat");
-    auto& children3 = std::get<json::Array>(obj3.at("children"));
-    assert(std::get<json::String>(std::get<json::Object>(children3.at(0)).at("name")) == "Ann");
-  }
-
   std::cout << "All tests parsing passed!" << std::endl;
 
   json::Value value = 42;
@@ -97,7 +80,6 @@ int main() {
   assert(
     (utils::toString(value) == "{\"key1\":1,\"key2\":2}") ||
     (utils::toString(value) == "{\"key2\":2,\"key1\":1}"));
-
   std::cout << "All serialization tests passed!" << std::endl;
 
   const std::string_view finalBusinessJson = R"(
@@ -113,6 +95,14 @@ int main() {
   assert(utils::toString(businessJson) == EXPECTED_STRING);
 
   std::cout << "All tests passed!" << std::endl;
+  
+  const auto ITERATIONS = 10;
+  auto jsonString = getHugeJsonArray();
+  auto [result, timeTaken] = utils::benchmark([&jsonString]() {
+    auto result = json::parse(jsonString);
+    return result;
+  }, ITERATIONS);
+  std::cout << "Time taken to parse 1 JSON string: " << (timeTaken / ITERATIONS) << "ns result=" << utils::toString(result).size() << std::endl;
 
   return 0;
 }
