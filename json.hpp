@@ -79,9 +79,8 @@ ParseResult parseNumber(std::string_view textData)
   });
   const auto end = (it == textData.end()) ? textData.size() : std::distance(textData.begin(), it);
   const auto value = textData.substr(0, end);
-  textData.remove_prefix(end);
   const bool isFloat = value.find('.') != std::string_view::npos;
-  return { isFloat ? Value(utils::stof(value)) : Value(utils::stoi(value)), textData };
+  return { isFloat ? Value(utils::stof(value)) : Value(utils::stoi(value)), textData.substr(end) };
 }
 
 ParseResult parseTrue(std::string_view textData)
