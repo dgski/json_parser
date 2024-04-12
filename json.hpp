@@ -7,6 +7,7 @@
 #include <variant>
 #include <unordered_map>
 #include <charconv>
+#include <iterator>
 
 #include "utils.hpp"
 
@@ -126,12 +127,13 @@ std::ostream& operator<<(std::ostream& os, const Value& value);
 
 std::ostream& operator<<(std::ostream& os, const Object& object)
 {
-  os << "{";
-  for (auto it = object.begin(); it != object.end(); ++it) {
-    os << "\"" << it->first << "\":" << it->second;
-    if (std::next(it) != object.end()) {
-      os << ",";
-    }
+  if (object.empty()) {
+    os << "{}";
+    return os;
+  }
+  os << "{\"" << object.begin()->first << "\":" << object.begin()->second;
+  for (auto it = std::next(object.begin()); it != object.end(); ++it) {
+    os << ",\"" << it->first << "\":" << it->second;
   }
   os << "}";
   return os;
@@ -140,13 +142,8 @@ std::ostream& operator<<(std::ostream& os, const Object& object)
 std::ostream& operator<<(std::ostream& os, const Array& array)
 {
   os << "[";
-  for (auto it = array.begin(); it != array.end(); ++it) {
-    os << *it;
-    if (std::next(it) != array.end()) {
-      os << ",";
-    }
-  }
-  os << "]";
+  std::copy(array.begin(), std::prev(array.end()), std::ostream_iterator<Value>(os, ","));
+  os << array.back() << "]";
   return os;
 }
 
