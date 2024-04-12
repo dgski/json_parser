@@ -74,10 +74,10 @@ ParseResult parseString(std::string_view textData)
 
 ParseResult parseNumber(std::string_view textData)
 {
-  auto end = textData.find_first_not_of("0123456789.-");
-  if (end == std::string_view::npos) {
-    end = textData.size();
-  }
+  const auto it = std::find_if_not(textData.begin(), textData.end(), [](char c) {
+    return std::isdigit(c) | c == '.' | c == '-';
+  });
+  const auto end = (it == textData.end()) ? textData.size() : std::distance(textData.begin(), it);
   const auto value = textData.substr(0, end);
   textData.remove_prefix(end);
   const bool isFloat = value.find('.') != std::string_view::npos;
